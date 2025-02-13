@@ -1,0 +1,9 @@
+setuptools
+python-dotenv
+Flask
+Flask-SQLAlchemy
+Flask-Principal
+Flask-Migrate
+Flask-Security[fsqla,common]
+Flask-Argon2
+
