@@ -1,5 +1,5 @@
 import os
-from flask import Flask, render_template
+from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_security import Security, SQLAlchemyUserDatastore
@@ -13,10 +13,11 @@ convention = {
     "fk": "fk_%(table_name)s_%(column_0_name)s_%(referred_table_name)s",
     "pk": "pk_%(table_name)s",
 }
+
 metadata = MetaData(naming_convention=convention)
-metadata = MetaData()
 db = SQLAlchemy(metadata=metadata)
 migrate = Migrate()
+security = Security()
 
 
 def register_extensions(app):
@@ -27,10 +28,17 @@ def register_extensions(app):
     else:
         migrate.init_app(app, db)
 
-    from models import User, Role
-
+    from app.core.models import User, Role
+    
     user_datastore = SQLAlchemyUserDatastore(db, User, Role)
-    security = Security(app, user_datastore)
+    security.init_app(app, user_datastore)
+
+def register_blueprints(app):
+    from importlib import import_module
+
+    for module_name in ['core']:
+        module = import_module(f'app.{module_name}.routes')
+        app.register_blueprint(module.bp)
 
 
 def create_app(config_name):
@@ -38,12 +46,14 @@ def create_app(config_name):
     app = Flask(__name__)
     app.config.from_object(config[config_name])
 
+
+    import flask_security 
+
     with app.app_context():
         register_extensions(app)
+        register_blueprints(app)
 
-    @app.route("/hello")
-    def hello():
-        return "Hello, World!"
+        db.create_all()
 
     return app
 
